@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.60"
+    }
+  }
+}
+
 provider "aws" {
   region = "us-east-1"
 }
@@ -15,6 +24,32 @@ module "vpc" {
 
   enable_nat_gateway = true
   single_nat_gateway = true
+
+  tags = {
+    Environment = "dev"
+    Project     = "eks-migration"
+  }
+}
+
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "20.15.0"
+
+  cluster_name    = "eks-migration-dev"
+  cluster_version = "1.30"
+
+  subnet_ids = module.vpc.private_subnets
+  vpc_id     = module.vpc.vpc_id
+
+  eks_managed_node_groups = {
+    default = {
+      instance_types = ["t3.small"]
+
+      min_size     = 1
+      max_size     = 1
+      desired_size = 1
+    }
+  }
 
   tags = {
     Environment = "dev"
